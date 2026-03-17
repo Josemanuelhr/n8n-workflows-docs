@@ -1,0 +1,555 @@
+{
+  "updatedAt": "2026-03-17T22:05:14.392Z",
+  "createdAt": "2026-03-17T21:37:55.959Z",
+  "id": "7SWJffxmVKYJviKc",
+  "name": "📚 Documentar Workflow n8n → GitHub",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "node-wf1-01",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ✏️ CONFIGURA AQUÍ antes de ejecutar\nconst WORKFLOW_ID = '7SWJffxmVKYJviKc'; // ID del workflow a documentar\nconst TELEGRAM_CHAT_ID = '364524620'; // Tu chat ID de Telegram\n\nreturn [{ json: { workflow_id: WORKFLOW_ID, chat_id: TELEGRAM_CHAT_ID } }];"
+      },
+      "id": "node-wf1-02",
+      "name": "⚙️ Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://test-n8n-n8n.qkyvh9.easypanel.host/api/v1/workflows/' + $json.workflow_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "node-wf1-03",
+      "name": "Get Workflow from n8n",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zld70Zc5aXVWOJw5",
+          "name": "n8n API Key"
+        }
+      },
+      "notes": "Asignar credential: 'n8n API Key' (Header Auth: X-N8N-API-KEY)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const wf = $input.first().json;\nconst slug = wf.name.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');\nconst nodes = wf.nodes || [];\nconst nodeRows = nodes.map(n => `<tr><td>${n.name}</td><td style='color:#666'>${n.type.replace('n8n-nodes-base.','')}</td></tr>`).join('\\n');\n\nconst html = `<!DOCTYPE html>\\n<html lang='es'>\\n<head>\\n<meta charset='UTF-8'>\\n<title>${wf.name} — n8n Docs</title>\\n<style>\\nbody{font-family:sans-serif;max-width:900px;margin:40px auto;padding:20px;color:#333}\\nh1{color:#ea4b71}h2{margin:24px 0 12px;border-bottom:2px solid #f0f0f0;padding-bottom:6px}\\n.meta{font-size:14px;color:#666;margin-bottom:20px}\\n.badge{padding:3px 10px;border-radius:12px;font-size:12px}\\n.active{background:#d4edda;color:#155724}.inactive{background:#f8d7da;color:#721c24}\\ntable{width:100%;border-collapse:collapse;font-size:14px}\\nth,td{border:1px solid #e8e8e8;padding:10px;text-align:left}th{background:#f8f9fa}\\n.btn{display:inline-block;margin-top:20px;padding:10px 20px;background:#ea4b71;color:white;text-decoration:none;border-radius:6px}\\n</style>\\n</head>\\n<body>\\n<h1>${wf.name}</h1>\\n<div class='meta'>\\nID: <code>${wf.id}</code> &nbsp;|&nbsp;\\nEstado: <span class='badge ${wf.active?'active':'inactive'}'>${wf.active?'✅ Activo':'⏸ Inactivo'}</span> &nbsp;|&nbsp;\\nNodos: <strong>${nodes.length}</strong> &nbsp;|&nbsp;\\nDocumentado: <strong>${new Date().toISOString().split('T')[0]}</strong>\\n</div>\\n<h2>Nodos del workflow</h2>\\n<table><thead><tr><th>Nombre</th><th>Tipo</th></tr></thead><tbody>\\n${nodeRows}\\n</tbody></table>\\n<a class='btn' href='https://test-n8n-n8n.qkyvh9.easypanel.host/workflow/${wf.id}' target='_blank'>🔗 Abrir en n8n</a>\\n<p style='margin-top:40px;font-size:12px;color:#999'>Generado: ${new Date().toISOString()}</p>\\n</body>\\n</html>`;\n\nreturn [{ json: { html, workflowJson: JSON.stringify(wf, null, 2), slug, name: wf.name, id: wf.id } }];"
+      },
+      "id": "node-wf1-04",
+      "name": "📝 Generate HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.github.com/repos/Josemanuelhr/n8n-workflows-docs/contents/' + $json.slug + '/overview.html' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-wf1-05",
+      "name": "Check HTML exists",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        880,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "w5hr73i0HmZlXs3T",
+          "name": "GitHub PAT"
+        }
+      },
+      "continueOnFail": true,
+      "notes": "Asignar credential: 'GitHub PAT' (Header Auth: Authorization: Bearer <token>)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const checkResult = $input.first().json;\nconst wfData = $('📝 Generate HTML').first().json;\n\nconst body = {\n  message: `docs: update ${wfData.name} overview`,\n  content: Buffer.from(wfData.html).toString('base64')\n};\n\nif (checkResult.sha) {\n  body.sha = checkResult.sha;\n}\n\nreturn [{ json: { body: JSON.stringify(body), slug: wfData.slug, name: wfData.name, id: wfData.id, workflowJson: wfData.workflowJson } }];"
+      },
+      "id": "node-wf1-06",
+      "name": "📦 Prepare HTML Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://api.github.com/repos/Josemanuelhr/n8n-workflows-docs/contents/' + $json.slug + '/overview.html' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "node-wf1-07",
+      "name": "⬆️ Upload overview.html",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1328,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "w5hr73i0HmZlXs3T",
+          "name": "GitHub PAT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.github.com/repos/Josemanuelhr/n8n-workflows-docs/contents/' + $('📦 Prepare HTML Upload').first().json.slug + '/workflow.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-wf1-08",
+      "name": "Check JSON exists",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "w5hr73i0HmZlXs3T",
+          "name": "GitHub PAT"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const checkResult = $input.first().json;\nconst wfData = $('📝 Generate HTML').first().json;\n\nconst body = {\n  message: `docs: update ${wfData.name} workflow.json`,\n  content: Buffer.from(wfData.workflowJson).toString('base64')\n};\n\nif (checkResult.sha) {\n  body.sha = checkResult.sha;\n}\n\nreturn [{ json: { body: JSON.stringify(body), slug: wfData.slug, name: wfData.name } }];"
+      },
+      "id": "node-wf1-09",
+      "name": "📦 Prepare JSON Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://api.github.com/repos/Josemanuelhr/n8n-workflows-docs/contents/' + $json.slug + '/workflow.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "node-wf1-10",
+      "name": "⬆️ Upload workflow.json",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1984,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "w5hr73i0HmZlXs3T",
+          "name": "GitHub PAT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/Josemanuelhr/n8n-workflows-docs/contents/README.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-wf1-11",
+      "name": "📖 Get README.md",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2208,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "w5hr73i0HmZlXs3T",
+          "name": "GitHub PAT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const readmeData = $input.first().json;\nconst wfData = $('📝 Generate HTML').first().json;\n\nconst currentContent = Buffer.from(readmeData.content, 'base64').toString('utf8');\nconst sha = readmeData.sha;\n\nconst githubUrl = 'https://github.com/Josemanuelhr/n8n-workflows-docs/blob/main/' + wfData.slug + '/overview.html';\nconst today = new Date().toISOString().split('T')[0];\nconst newEntry = '| [' + wfData.name + '](' + wfData.slug + '/overview.html) | ' + today + ' | [Ver HTML](' + githubUrl + ') |';\n\nlet lines = currentContent.split('\\n');\nconst existingIdx = lines.findIndex(function(l) { return l.includes('(' + wfData.slug + '/'); });\n\nif (existingIdx >= 0) {\n  lines[existingIdx] = newEntry;\n} else {\n  lines.push(newEntry);\n}\n\nconst newContent = lines.join('\\n');\nconst bodyObj = {\n  message: 'docs: add ' + wfData.name + ' to index',\n  content: Buffer.from(newContent).toString('base64'),\n  sha: sha\n};\n\nconst result = { body: JSON.stringify(bodyObj), name: wfData.name, slug: wfData.slug };\nreturn [{ json: result }];"
+      },
+      "id": "node-wf1-12",
+      "name": "📋 Update README",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.github.com/repos/Josemanuelhr/n8n-workflows-docs/contents/README.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "node-wf1-13",
+      "name": "💾 Save README.md",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2640,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "w5hr73i0HmZlXs3T",
+          "name": "GitHub PAT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('⚙️ Config').first().json.chat_id }}",
+        "text": "={{ '✅ Workflow documentado: *' + $json.name + '*\\n\\n🔗 https://github.com/Josemanuelhr/n8n-workflows-docs/blob/main/' + $json.slug + '/overview.html' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "node-wf1-14",
+      "name": "✅ Notify Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2864,
+        304
+      ],
+      "webhookId": "ed8a81d6-615d-47a7-9e08-4f9a81eafa6f",
+      "credentials": {
+        "telegramApi": {
+          "id": "EfMSrg7J40RfVnXe",
+          "name": "n8n-github-demo"
+        }
+      },
+      "notes": "Asignar credential: 'Telegram Bot API'"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Config": {
+      "main": [
+        [
+          {
+            "node": "Get Workflow from n8n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Workflow from n8n": {
+      "main": [
+        [
+          {
+            "node": "📝 Generate HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Generate HTML": {
+      "main": [
+        [
+          {
+            "node": "Check HTML exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check HTML exists": {
+      "main": [
+        [
+          {
+            "node": "📦 Prepare HTML Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Prepare HTML Upload": {
+      "main": [
+        [
+          {
+            "node": "⬆️ Upload overview.html",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⬆️ Upload overview.html": {
+      "main": [
+        [
+          {
+            "node": "Check JSON exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check JSON exists": {
+      "main": [
+        [
+          {
+            "node": "📦 Prepare JSON Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Prepare JSON Upload": {
+      "main": [
+        [
+          {
+            "node": "⬆️ Upload workflow.json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⬆️ Upload workflow.json": {
+      "main": [
+        [
+          {
+            "node": "📖 Get README.md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📖 Get README.md": {
+      "main": [
+        [
+          {
+            "node": "📋 Update README",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Update README": {
+      "main": [
+        [
+          {
+            "node": "💾 Save README.md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Save README.md": {
+      "main": [
+        [
+          {
+            "node": "✅ Notify Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "f9da8e58-1af2-44f5-b919-b554b60ecb88",
+  "activeVersionId": null,
+  "versionCounter": 21,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-17T21:37:55.986Z",
+      "createdAt": "2026-03-17T21:37:55.986Z",
+      "role": "workflow:owner",
+      "workflowId": "7SWJffxmVKYJviKc",
+      "projectId": "0CXzZnDSXhaLlofK",
+      "project": {
+        "updatedAt": "2026-03-15T10:55:43.583Z",
+        "createdAt": "2026-03-15T10:54:09.949Z",
+        "id": "0CXzZnDSXhaLlofK",
+        "name": "Jose Manuel Rogel <josemanuelhidalgorogel@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "3d5e9fd3-0a15-4b40-9989-4f8203788d11"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}
